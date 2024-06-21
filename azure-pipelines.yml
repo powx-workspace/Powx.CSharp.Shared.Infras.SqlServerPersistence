@@ -1,0 +1,45 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  - master
+
+pool:
+  name: Azure Pipelines
+
+variables:
+  major: '1'
+  minor: '0'
+  revision: $[counter(variables['minor'], 1)] # This will get reset every time minor gets bumped.
+  nugetVersion: '$(major).$(minor).$(revision)'
+
+jobs:
+  - job:
+    displayName: 'Build - Pack - Push'
+    steps:
+      - task: UseDotNet@2
+        displayName: 'Use .NET Core'
+        inputs:
+          packageType: 'sdk'
+          version: '8.0.x'
+      - task: DotNetCoreCLI@2
+        displayName: 'Build'
+        inputs:
+          command: 'build'
+          projects: '**/Shared.Infras.SqlServerPersistence.csproj'
+      - task: DotNetCoreCLI@2
+        displayName: 'Pack'
+        inputs:
+          command: 'pack'
+          packagesToPack: '**/Shared.Infras.SqlServerPersistence.csproj'
+          versioningScheme: byEnvVar
+          versionEnvVar: nugetVersion
+      - task: DotNetCoreCLI@2
+        displayName: 'push'
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+          nuGetFeedType: 'internal'
+          publishVstsFeed: '7331e448-5b15-4c2b-b34c-b1a98d3f40d5/09c809cb-6d5a-4a16-8b14-7996222f4381'
